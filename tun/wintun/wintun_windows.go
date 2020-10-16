@@ -31,8 +31,9 @@ type Adapter uintptr
 //sys	wintunSetLogger(logger uintptr) = wintun.WintunSetLogger
 
 func init() {
-	logger := func(level loggerLevel, msg *uint16) {
+	logger := func(level loggerLevel, msg *uint16) int {
 		// TODO: Connect to the logger.
+		return 0
 	}
 	wintunSetLogger(windows.NewCallback(logger))
 }
