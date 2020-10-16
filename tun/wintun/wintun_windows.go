@@ -7,10 +7,8 @@ package wintun
 
 import (
 	"fmt"
-	"os/exec"
 
 	"golang.org/x/sys/windows"
-	"golang.org/x/sys/windows/registry"
 )
 
 const (
@@ -20,21 +18,6 @@ const (
 
 type Pool [MAX_POOL]uint16
 type Adapter uintptr
-
-var (
-	isWow64      bool
-	rundll32Path string
-)
-
-func init() {
-	err := windows.IsWow64Process(windows.CurrentProcess(), &isWow64)
-	isWow64 = err == nil && isWow64
-
-	rundll32Path, err = registry.ExpandString("%SystemRoot%\\Sysnative\\rundll32.exe")
-	if err != nil {
-		panic(err)
-	}
-}
 
 func MakePool(poolName string) (pool Pool) {
 	poolName16 := windows.StringToUTF16(poolName)
@@ -80,27 +63,12 @@ func (pool Pool) Adapter(ifname string) (adapter Adapter, err error) {
 // uses is completely undocumented, and so there could be minor interesting complications with its
 // usage. This function returns the network adapter ID and a flag if reboot is required.
 func (pool Pool) CreateAdapter(ifname string, requestedGUID *windows.GUID) (wintun Adapter, rebootRequired bool, err error) {
-	if isWow64 {
-		var cmd *exec.Cmd
-		if requestedGUID != nil {
-			cmd = exec.Command(rundll32Path, "wintun.dll,CreateAdapter", pool.String(), ifname, requestedGUID.String())
-		} else {
-			cmd = exec.Command(rundll32Path, "wintun.dll,CreateAdapter", pool.String(), ifname)
-		}
-		err = cmd.Run()
-		if err != nil {
-			err = fmt.Errorf("Error executing rundll32 wintun.dll,CreateAdapter: %v", err)
-			return
-		}
-		wintun, err = pool.Adapter(ifname)
-	} else {
-		var ifname16 *uint16
-		ifname16, err = windows.UTF16PtrFromString(ifname)
-		if err != nil {
-			return
-		}
-		err = wintunCreateAdapter(&pool[0], ifname16, requestedGUID, &wintun, &rebootRequired)
+	var ifname16 *uint16
+	ifname16, err = windows.UTF16PtrFromString(ifname)
+	if err != nil {
+		return
 	}
+	err = wintunCreateAdapter(&pool[0], ifname16, requestedGUID, &wintun, &rebootRequired)
 	return
 }
 
@@ -109,15 +77,7 @@ func (pool Pool) CreateAdapter(ifname string, requestedGUID *windows.GUID) (wint
 // Delete deletes a Wintun adapter. This function succeeds if the adapter was not found. It returns
 // a bool indicating whether a reboot is required.
 func (wintun Adapter) Delete() (rebootRequired bool, err error) {
-	if isWow64 {
-		err = exec.Command(rundll32Path, "wintun.dll,DeleteAdapter", wintun.GUID().String()).Run()
-		if err != nil {
-			err = fmt.Errorf("Error executing rundll32 wintun.dll,CreateAdapter: %v", err)
-			return
-		}
-	} else {
-		err = wintunDeleteAdapter(wintun, &rebootRequired)
-	}
+	err = wintunDeleteAdapter(wintun, &rebootRequired)
 	return
 }
 
