@@ -11,6 +11,14 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+type loggerLevel int
+
+const (
+	logInfo loggerLevel = iota
+	logWarn
+	logErr
+)
+
 const (
 	MAX_POOL         = 256
 	MAX_ADAPTER_NAME = 128
@@ -18,6 +26,15 @@ const (
 
 type Pool [MAX_POOL]uint16
 type Adapter uintptr
+
+//sys	wintunSetLogger(logger uintptr) = wintun.WintunSetLogger
+
+func init() {
+	logger := func(level loggerLevel, msg *uint16) {
+		// TODO: Connect to the logger.
+	}
+	wintunSetLogger(windows.NewCallback(logger))
+}
 
 func MakePool(poolName string) (pool Pool) {
 	poolName16 := windows.StringToUTF16(poolName)

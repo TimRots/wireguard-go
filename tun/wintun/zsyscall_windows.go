@@ -39,6 +39,7 @@ func errnoErr(e syscall.Errno) error {
 var (
 	modwintun = windows.NewLazySystemDLL("wintun.dll")
 
+	procWintunSetLogger              = modwintun.NewProc("WintunSetLogger")
 	procWintunFreeAdapter            = modwintun.NewProc("WintunFreeAdapter")
 	procWintunGetAdapter             = modwintun.NewProc("WintunGetAdapter")
 	procWintunCreateAdapter          = modwintun.NewProc("WintunCreateAdapter")
@@ -51,6 +52,11 @@ var (
 	procWintunGetAdapterGUID         = modwintun.NewProc("WintunGetAdapterGUID")
 	procWintunGetAdapterLUID         = modwintun.NewProc("WintunGetAdapterLUID")
 )
+
+func wintunSetLogger(logger uintptr) {
+	syscall.Syscall(procWintunSetLogger.Addr(), 1, uintptr(logger), 0, 0)
+	return
+}
 
 func wintunFreeAdapter(adapter Adapter) {
 	syscall.Syscall(procWintunFreeAdapter.Addr(), 1, uintptr(adapter), 0, 0)
