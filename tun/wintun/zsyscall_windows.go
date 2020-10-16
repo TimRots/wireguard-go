@@ -5,8 +5,6 @@ package wintun
 import (
 	"syscall"
 	"unsafe"
-
-	"golang.org/x/sys/windows"
 )
 
 var _ unsafe.Pointer
@@ -37,7 +35,7 @@ func errnoErr(e syscall.Errno) error {
 }
 
 var (
-	modwintun = windows.NewLazySystemDLL("wintun.dll")
+	modwintun = syscall.NewLazyDLL("wintun.dll")
 
 	procWintunSetLogger              = modwintun.NewProc("WintunSetLogger")
 	procWintunFreeAdapter            = modwintun.NewProc("WintunFreeAdapter")
@@ -71,14 +69,14 @@ func wintunGetAdapter(pool *uint16, name *uint16, adapter *Adapter) (ret error) 
 	return
 }
 
-func wintunCreateAdapter(pool *uint16, name *uint16, requestedGUID *windows.GUID, adapter *Adapter, rebootRequired *bool) (ret error) {
+func wintunCreateAdapter(pool *uint16, name *uint16, requestedGUID unsafe.Pointer, adapter *Adapter, rebootRequired *bool) (ret error) {
 	var _p0 uint32
 	if *rebootRequired {
 		_p0 = 1
 	} else {
 		_p0 = 0
 	}
-	r0, _, _ := syscall.Syscall6(procWintunCreateAdapter.Addr(), 5, uintptr(unsafe.Pointer(pool)), uintptr(unsafe.Pointer(name)), uintptr(unsafe.Pointer(requestedGUID)), uintptr(unsafe.Pointer(adapter)), uintptr(unsafe.Pointer(&_p0)), 0)
+	r0, _, _ := syscall.Syscall6(procWintunCreateAdapter.Addr(), 5, uintptr(unsafe.Pointer(pool)), uintptr(unsafe.Pointer(name)), uintptr(requestedGUID), uintptr(unsafe.Pointer(adapter)), uintptr(unsafe.Pointer(&_p0)), 0)
 	*rebootRequired = _p0 != 0
 	if r0 != 0 {
 		ret = syscall.Errno(r0)
@@ -133,16 +131,16 @@ func wintunGetVersion(driverVersionMaj *uint32, driverVersionMin *uint32, ndisVe
 	return
 }
 
-func wintunGetAdapterDeviceObject(adapter Adapter, handle *windows.Handle) (ret error) {
-	r0, _, _ := syscall.Syscall(procWintunGetAdapterDeviceObject.Addr(), 2, uintptr(adapter), uintptr(unsafe.Pointer(handle)), 0)
+func wintunGetAdapterDeviceObject(adapter Adapter, handle unsafe.Pointer) (ret error) {
+	r0, _, _ := syscall.Syscall(procWintunGetAdapterDeviceObject.Addr(), 2, uintptr(adapter), uintptr(handle), 0)
 	if r0 != 0 {
 		ret = syscall.Errno(r0)
 	}
 	return
 }
 
-func wintunGetAdapterGUID(adapter Adapter, guid *windows.GUID) {
-	syscall.Syscall(procWintunGetAdapterGUID.Addr(), 2, uintptr(adapter), uintptr(unsafe.Pointer(guid)), 0)
+func wintunGetAdapterGUID(adapter Adapter, guid unsafe.Pointer) {
+	syscall.Syscall(procWintunGetAdapterGUID.Addr(), 2, uintptr(adapter), uintptr(guid), 0)
 	return
 }
 

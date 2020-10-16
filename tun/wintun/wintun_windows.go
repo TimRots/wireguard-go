@@ -7,6 +7,7 @@ package wintun
 
 import (
 	"fmt"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
@@ -71,7 +72,7 @@ func (pool Pool) Adapter(ifname string) (adapter Adapter, err error) {
 	return
 }
 
-//sys	wintunCreateAdapter(pool *uint16, name *uint16, requestedGUID *windows.GUID, adapter *Adapter, rebootRequired *bool) (ret error) = wintun.WintunCreateAdapter
+//sys	wintunCreateAdapter(pool *uint16, name *uint16, requestedGUID unsafe.Pointer, adapter *Adapter, rebootRequired *bool) (ret error) = wintun.WintunCreateAdapter
 
 // CreateAdapter creates a Wintun adapter. ifname is the requested name of the adapter, while
 // requestedGUID is the GUID of the created network adapter, which then influences NLA generation
@@ -85,7 +86,7 @@ func (pool Pool) CreateAdapter(ifname string, requestedGUID *windows.GUID) (wint
 	if err != nil {
 		return
 	}
-	err = wintunCreateAdapter(&pool[0], ifname16, requestedGUID, &wintun, &rebootRequired)
+	err = wintunCreateAdapter(&pool[0], ifname16, unsafe.Pointer(requestedGUID), &wintun, &rebootRequired)
 	return
 }
 
@@ -165,19 +166,19 @@ func Version() (driverVersion string, ndisVersion string, err error) {
 	return
 }
 
-//sys	wintunGetAdapterDeviceObject(adapter Adapter, handle *windows.Handle) (ret error) = wintun.WintunGetAdapterDeviceObject
+//sys	wintunGetAdapterDeviceObject(adapter Adapter, handle unsafe.Pointer) (ret error) = wintun.WintunGetAdapterDeviceObject
 
 // handle returns a handle to the adapter device object. Release handle with windows.CloseHandle
 func (wintun Adapter) handle() (handle windows.Handle, err error) {
-	err = wintunGetAdapterDeviceObject(wintun, &handle)
+	err = wintunGetAdapterDeviceObject(wintun, unsafe.Pointer(&handle))
 	return
 }
 
-//sys	wintunGetAdapterGUID(adapter Adapter, guid *windows.GUID) = wintun.WintunGetAdapterGUID
+//sys	wintunGetAdapterGUID(adapter Adapter, guid unsafe.Pointer) = wintun.WintunGetAdapterGUID
 
 // GUID returns the GUID of the adapter.
 func (wintun Adapter) GUID() (guid windows.GUID) {
-	wintunGetAdapterGUID(wintun, &guid)
+	wintunGetAdapterGUID(wintun, unsafe.Pointer(&guid))
 	return
 }
 

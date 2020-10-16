@@ -5,4 +5,4 @@
 
 package wintun
 
-//go:generate go run golang.org/x/sys/windows/mkwinsyscall -output zsyscall_windows.go wintun_windows.go
+//go:generate go run golang.org/x/sys/windows/mkwinsyscall -systemdll=0 -output zsyscall_windows.go wintun_windows.go
